@@ -18,6 +18,44 @@ In my opinion, it makes sense as context switch between NetworkInterfaceControll
 
 But I shall benchmark it. And this project is that.
 
+## Usage
+
+### STEP 1 Start Server
+
+```shell
+go run ./tools/server
+```
+
+If fails like port conflict, fix it yourself.
+
+Then bench in **another** terminal.
+
+### STEP 2 Run Benchmark
+
+A whole suit can take 42s, expect a longer time for run multiple times.
+
+The count 6 is minimal for `benchstat` to conclude confidence, count 10 is so-called minimal in its doc.
+
+```shell
+go test -bench=. -count=10 | tee new.txt
+```
+
+Now you could stop the server in STEP 1, maybe through Ctrl + C or kill.
+
+### STEP 3 Do Analyse
+
+Install one if you haven't.
+
+```shell
+go install golang.org/x/perf/cmd/benchstat@latest
+```
+
+Check [the official documentation](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) for RTFM.
+
+```shell
+benchstat -col /buf new.txt
+```
+
 ## Results
 
 ### Server
