@@ -7,15 +7,20 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 )
+
+func destination(count int) string {
+	return "./item_" + strconv.Itoa(count)
+}
 
 func BenchmarkSuit(b *testing.B) {
 	sizes := []string{"128KiB", "2MiB", "8MiB", "32MiB", "512MiB"}
 	// FYI, when I wrote this, the default of io.CopyBuffer is 32*1024,
 	// which is also the normal path that would actually be.
 	bufSizes := []string{"512B", "2KiB", "8KiB", "32KiB", "256KiB", "1MiB"}
-	destination := "./item"
+	var count int
 	for _, size := range sizes {
 		b.Run("size="+size, func(b *testing.B) {
 			// Ignore err as the same parser will Fatal later in Download.
@@ -23,30 +28,41 @@ func BenchmarkSuit(b *testing.B) {
 
 			source := "http://localhost:8086/download?size=" + size
 			b.Run("buf=normal", func(b *testing.B) {
+				b.SetBytes(int64(bytes))
 				for b.Loop() {
-					b.SetBytes(int64(bytes))
-					if err := Download(context.Background(), source, destination); err != nil {
+					if err := Download(context.Background(), source, destination(count)); err != nil {
 						b.Fatal(err)
 					}
+					count++
 				}
 			})
+			count = cleanup(b, count)
+
 			for _, bufSize := range bufSizes {
 				bs, _ := humanize.ParseBytes(bufSize)
+				count = 0
 				b.Run("buf="+bufSize, func(b *testing.B) {
+					b.SetBytes(int64(bytes))
 					for b.Loop() {
-						b.SetBytes(int64(bytes))
-						if err := DownloadWithBuffer(context.Background(), source, destination, int(bs)); err != nil {
+						if err := DownloadWithBuffer(context.Background(), source, destination(count), int(bs)); err != nil {
 							b.Fatal(err)
 						}
+						count++
 					}
 				})
+				count = cleanup(b, count)
 			}
 		})
 	}
+}
 
-	if err := os.Remove(destination); err != nil {
-		b.Logf("Failed to cleanup remove created file %s: %v", destination, err)
+func cleanup(b *testing.B, count int) (neoCount int) {
+	for i := range count {
+		if err := os.Remove(destination(i)); err != nil {
+			b.Logf("Failed to cleanup remove created file %s: %v", destination(i), err)
+		}
 	}
+	return 0
 }
 
 // noReadFrom is copied from that in package io.

@@ -71,3 +71,15 @@ The test method is I input the URL to Firefox address bar and monitor the browse
 The SpeedTest reports it's 300 Mbps. Most likely the bottleneck is Wi-Fi.
 
 For 10 GiB file, the speed of localhost is 900 MiB/s, seems the bottleneck is SSD.
+
+### SameFile
+
+Testing on a same destination filepath results in weired result,
+
+as SSD and tmpfs share a same speed, and I can't observe a high disk IO.
+
+Maybe the flush does not work as expected or inode manipulation majors.
+
+Through use varied filename, in the cost of a higher storage consumption,
+
+I could observe a high IO, which allows me to assume I have fixed it.
