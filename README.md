@@ -52,9 +52,24 @@ go install golang.org/x/perf/cmd/benchstat@latest
 
 Check [the official documentation](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) for RTFM.
 
+See how the filesize and bufSize matters.
+
 ```shell
 benchstat -col /buf new.txt
 ```
+
+Or you can have a look over my collected data.
+
+```shell
+cd data
+benchstat -filter .unit:B/s -table /size -row /buf tmpfs-macOS.txt ssd-macOS.txt tmpfs-linux.txt ssd-linux.txt
+```
+
+The memory and SSD of macOS is the cheapest one of that CPU model, all are embedded by Apple.
+
+As for linux, it's 2x DDR5 6000 32GiB and PM871 512GiB as ext4 over LVM mounted on slash.
+
+Notably, macOS is used as dev machine, thus not quite idle while benchmarking, although I have halted the IDE scan.
 
 ## Results
 
