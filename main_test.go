@@ -20,7 +20,6 @@ func BenchmarkSuit(b *testing.B) {
 	// FYI, when I wrote this, the default of io.CopyBuffer is 32*1024,
 	// which is also the normal path that would actually be.
 	bufSizes := []string{"512B", "2KiB", "8KiB", "32KiB", "256KiB", "1MiB"}
-	var count int
 	for _, size := range sizes {
 		b.Run("size="+size, func(b *testing.B) {
 			// Ignore err as the same parser will Fatal later in Download.
@@ -28,6 +27,7 @@ func BenchmarkSuit(b *testing.B) {
 
 			source := "http://localhost:8086/download?size=" + size
 			b.Run("buf=normal", func(b *testing.B) {
+				var count int
 				b.SetBytes(int64(bytes))
 				for b.Loop() {
 					if err := Download(context.Background(), source, destination(count)); err != nil {
@@ -35,13 +35,15 @@ func BenchmarkSuit(b *testing.B) {
 					}
 					count++
 				}
+				b.Cleanup(func() {
+					cleanup(b, count)
+				})
 			})
-			count = cleanup(b, count)
 
 			for _, bufSize := range bufSizes {
 				bs, _ := humanize.ParseBytes(bufSize)
-				count = 0
 				b.Run("buf="+bufSize, func(b *testing.B) {
+					var count int
 					b.SetBytes(int64(bytes))
 					for b.Loop() {
 						if err := DownloadWithBuffer(context.Background(), source, destination(count), int(bs)); err != nil {
@@ -49,20 +51,21 @@ func BenchmarkSuit(b *testing.B) {
 						}
 						count++
 					}
+					b.Cleanup(func() {
+						cleanup(b, count)
+					})
 				})
-				count = cleanup(b, count)
 			}
 		})
 	}
 }
 
-func cleanup(b *testing.B, count int) (neoCount int) {
+func cleanup(b *testing.B, count int) {
 	for i := range count {
 		if err := os.Remove(destination(i)); err != nil {
 			b.Logf("Failed to cleanup remove created file %s: %v", destination(i), err)
 		}
 	}
-	return 0
 }
 
 // noReadFrom is copied from that in package io.
